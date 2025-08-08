@@ -1,691 +1,177 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Typing Lab — Latihan Mengetik</title>
-  <style>
-    :root{
-      --bg-1: #071027;
-      --bg-2: #07162a;
-      --card: rgba(255,255,255,0.04);
-      --muted: #9aa4b2;
-      --accent-a: #5ea8ff;
-      --accent-b: #2b7bd3;
-      --glass: rgba(255,255,255,0.03);
-      --glass-2: rgba(255,255,255,0.02);
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latihan Mengetik</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #e6f0ff;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        flex-direction: column;
     }
-
-    /* Reset & basics */
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;
-      background: linear-gradient(180deg,var(--bg-1), var(--bg-2));
-      color: #e6eef8;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:28px;
+    h1 {
+        color: #0066cc;
+        margin-bottom: 20px;
     }
-
-    /* Layout */
-    .wrap{
-      width:100%;
-      max-width:1100px;
-      display:grid;
-      grid-template-columns: 1fr 360px;
-      gap:24px;
+    #textDisplay {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        max-width: 700px;
+        font-size: 18px;
+        line-height: 1.6;
+        color: #333;
+        user-select: none;
     }
-    .card{
-      background: linear-gradient(180deg, var(--card), var(--glass-2));
-      border-radius:14px;
-      padding:18px;
-      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
-      border:1px solid rgba(255,255,255,0.03);
-      backdrop-filter: blur(6px); /* subtle glass */
+    .correct { color: green; }
+    .incorrect { color: red; }
+    textarea {
+        margin-top: 20px;
+        width: 700px;
+        height: 120px;
+        font-size: 18px;
+        padding: 15px;
+        border-radius: 10px;
+        border: 2px solid #0066cc;
+        outline: none;
     }
-
-    header.app{
-      grid-column: 1 / -1;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:12px 18px;
-      margin-bottom:6px;
-      background: linear-gradient(90deg, rgba(94,168,255,0.06), rgba(43,123,211,0.03));
-      border-radius:12px;
+    #scoreBoard {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.5);
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        text-align: center;
+        opacity: 0;
+        transition: all 0.4s ease;
+        z-index: 10;
+        width: 300px;
     }
-    header.app h1{margin:0;font-size:18px;letter-spacing:0.2px}
-    header.app p{margin:0;color:var(--muted);font-size:13px}
-
-    /* Main area */
-    .main{ display:flex; flex-direction:column; gap:14px; }
-
-    .controls-top{ display:flex; justify-content:space-between; gap:12px; align-items:center; }
-    .left-controls, .right-controls{ display:flex; gap:8px; align-items:center; }
-    .select{
-      background:transparent;
-      border:1px solid rgba(255,255,255,0.04);
-      padding:8px;
-      border-radius:8px;
-      color:var(--muted);
+    #scoreBoard.show {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
     }
-    .btn{
-      background:transparent;
-      border:1px solid rgba(255,255,255,0.06);
-      padding:8px 12px;
-      border-radius:8px;
-      color:inherit;
-      cursor:pointer;
-      font-size:14px;
+    #scoreBoard h2 {
+        margin-bottom: 15px;
+        color: #0066cc;
     }
-    .btn.primary{
-      background: linear-gradient(90deg,var(--accent-a), var(--accent-b));
-      color:white;
-      border:none;
-      box-shadow: 0 8px 30px rgba(43,123,211,0.12);
+    #saveScore {
+        background: #0066cc;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 8px;
+        cursor: pointer;
     }
-
-    .display{
-      min-height:160px;
-      padding:18px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border-radius:10px;
-      font-size:18px;
-      line-height:1.9;
-      color:#cfe8ff;
-      overflow-wrap:break-word;
-      user-select:none;
-      border: 1px solid rgba(255,255,255,0.02);
-    }
-    .display span{
-      padding:1px 3px;
-      border-radius:4px;
-      white-space:pre-wrap;
-      transition: background 120ms, color 120ms, transform 120ms;
-      display:inline-block;
-    }
-    .display .correct{
-      background: rgba(50,205,125,0.12);
-      color:#bfffe0;
-      transform: translateY(-1px);
-    }
-    .display .incorrect{
-      background: rgba(239,68,68,0.12);
-      color:#ffd7d7;
-      text-decoration: underline;
-      transform: translateY(0);
-    }
-    .display .current{
-      border-bottom: 2px solid rgba(94,168,255,0.6);
-    }
-
-    textarea#input{
-      width:100%;
-      min-height:110px;
-      resize:vertical;
-      border-radius:8px;
-      padding:14px;
-      font-size:16px;
-      color:var(--bg-1);
-      border: none;
-      outline: none;
-      margin-top:12px;
-      background: rgba(255,255,255,0.96);
-    }
-
-    .controls{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
-      flex-wrap:wrap;
-    }
-
-    .small{ font-size:13px;color:var(--muted); }
-
-    /* Right panel */
-    .panel{ display:flex; flex-direction:column; gap:12px; }
-    .stat{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:12px;
-      border-radius:10px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.01));
-      border:1px solid rgba(255,255,255,0.02);
-    }
-    .stat .label{ color:var(--muted); font-size:13px }
-    .stat .value{ font-size:20px; font-weight:700; color:#e6f6ff }
-
-    .leaderboard{ max-height:260px; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px; }
-    .score-row{ display:flex; justify-content:space-between; padding:8px; border-radius:8px; background: rgba(255,255,255,0.02); }
-
-    /* Overlay modal (glass + blur, subtle iOS look) */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-      backdrop-filter: blur(6px) saturate(120%);
-      background: linear-gradient(180deg, rgba(2,6,23,0.45), rgba(2,6,23,0.6));
-    }
-    .score-modal {
-      width: 420px;
-      max-width: 92%;
-      border-radius: 14px;
-      padding: 20px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
-      color: white;
-      box-shadow: 0 30px 60px rgba(2,10,30,0.6);
-      border: 1px solid rgba(255,255,255,0.06);
-      text-align: center;
-      transform: translateY(8px) scale(0.98);
-      opacity: 0;
-      transition: opacity 220ms ease, transform 220ms cubic-bezier(.2,.9,.2,1);
-      overflow: hidden;
-      backdrop-filter: blur(8px);
-    }
-    .overlay.show .score-modal{
-      transform: translateY(0) scale(1);
-      opacity: 1;
-    }
-    .score-modal .title {
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-      flex-direction:column;
-    }
-    .score-modal h2{ margin:0; font-size:20px; color:var(--accent-a) }
-    .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px }
-    .stat-item{
-      background: linear-gradient(180deg, rgba(94,168,255,0.08), rgba(43,123,211,0.05));
-      padding:12px;
-      border-radius:10px;
-      font-weight:700;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-    }
-    .stat-item .label{ font-size:12px; color:rgba(255,255,255,0.85); font-weight:600 }
-    .stat-item .value{ font-size:20px; margin-top:6px; color:#fff }
-
-    .modal-actions{ display:flex; gap:10px; justify-content:center; margin-top:16px }
-    .modal-actions .btn{ padding:10px 14px; border-radius:10px; font-weight:700 }
-    .btn.save{ background: linear-gradient(90deg,var(--accent-a),var(--accent-b)); color:white; border:none }
-    .btn.retry{ background: rgba(255,255,255,0.08); color:white; border:none }
-    .btn.close{ background: transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.04) }
-
-    .footer-note{ color:var(--muted); font-size:13px; text-align:center; margin-top:8px }
-
-    @media (max-width:980px){
-      .wrap{ grid-template-columns: 1fr; }
-      .card{ padding:14px }
-    }
-  </style>
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="app card">
-      <div>
-        <h1>Typing Lab</h1>
-        <p>Latihan mengetik — WPM, akurasi, timer, leaderboard lokal</p>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <div class="small">Mode: <strong id="modeLabel">Time</strong></div>
-        <button class="btn" id="helpBtn">Petunjuk</button>
-      </div>
-    </header>
 
-    <!-- MAIN -->
-    <div class="card main">
-      <div class="controls-top">
-        <div class="left-controls">
-          <select id="presetSelect" class="select" title="Pilih paragraf latihan">
-            <option value="0">Paragraf acak</option>
-            <option value="1">Paragraf sederhana</option>
-            <option value="2">Paragraf menengah</option>
-            <option value="3">Paragraf sulit</option>
-          </select>
-          <select id="timeSelect" class="select" title="Pilih durasi">
-            <option value="60">60 detik</option>
-            <option value="30">30 detik</option>
-            <option value="15">15 detik</option>
-          </select>
-        </div>
-        <div class="right-controls">
-          <button class="btn" id="newTxtBtn">Tampilkan teks baru</button>
-          <button class="btn primary" id="startBtn">Mulai</button>
-        </div>
-      </div>
+<h1>Latihan Mengetik</h1>
+<div id="textDisplay"></div>
+<textarea id="textInput" placeholder="Mulai mengetik di sini..."></textarea>
 
-      <div id="display" class="display" aria-live="polite"></div>
+<div id="scoreBoard">
+    <h2>Hasil Kamu</h2>
+    <p id="wpmScore"></p>
+    <p id="timeScore"></p>
+    <p id="typoScore"></p>
+    <button id="saveScore">Simpan Skor</button>
+</div>
 
-      <textarea id="input" placeholder="Ketik di sini untuk memulai..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+<script>
+const texts = [
+    "Belajar mengetik dengan cepat membutuhkan latihan yang konsisten dan fokus.",
+    "Disiplin adalah kunci untuk mencapai kesuksesan dalam segala bidang.",
+    "Teknologi berkembang pesat, kita harus terus belajar dan beradaptasi.",
+    "Aulia Nurkamilah, adalah seorang lulusan SMKN 18 Jakarta, Jurusan Manajemen Perkantoran. Dan ia sekarang sedang melajutkan pendidikannya, di kampus Universitas Islam Jakarta. Dengan jurusan yang ia ambil, yaitu Program Studi Fisika, Untuk kamu, semoga sukses selalu"
+];
 
-      <div class="controls">
-        <div class="left-controls small">
-          <div>Waktu sisa: <strong id="timeLeft">60</strong>s</div>
-          <div style="margin-left:8px">WPM: <strong id="wpm">0</strong></div>
-          <div style="margin-left:8px">Akurasi: <strong id="accuracy">100</strong>%</div>
-        </div>
-        <div class="right-controls">
-          <button class="btn" id="resetBtn">Reset</button>
-          <button class="btn" id="saveScoreBtn">Simpan skor</button>
-        </div>
-      </div>
+const textDisplay = document.getElementById("textDisplay");
+const textInput = document.getElementById("textInput");
+const scoreBoard = document.getElementById("scoreBoard");
+const wpmScore = document.getElementById("wpmScore");
+const timeScore = document.getElementById("timeScore");
+const typoScore = document.getElementById("typoScore");
 
-      <div class="footer-note">Tip: Tekan <kbd>Ctrl</kbd> + <kbd>L</kbd> untuk fokus area mengetik.</div>
-    </div>
+let startTime, timerRunning = false, typos = 0;
 
-    <!-- RIGHT PANEL -->
-    <aside class="card panel">
-      <div class="stat">
-        <div class="label">Progress</div>
-        <div class="value" id="progressVal">0 / 0</div>
-      </div>
+function loadText() {
+    const randomText = texts[Math.floor(Math.random() * texts.length)];
+    textDisplay.innerHTML = "";
+    randomText.split("").forEach(char => {
+        const span = document.createElement("span");
+        span.textContent = char;
+        textDisplay.appendChild(span);
+    });
+    textInput.value = "";
+    timerRunning = false;
+    typos = 0;
+}
+loadText();
 
-      <div class="stat">
-        <div class="label">Terbaik (Local)</div>
-        <div class="value" id="bestVal">-</div>
-      </div>
+textInput.addEventListener("input", () => {
+    const arrayText = textDisplay.querySelectorAll("span");
+    const arrayValue = textInput.value.split("");
 
-      <div style="padding:6px;background:transparent;border-radius:8px">
-        <div class="small" style="margin-bottom:8px">Leaderboard (LocalStorage)</div>
-        <div class="leaderboard" id="leaderboard"></div>
-      </div>
-
-      <div style="display:flex;gap:8px">
-        <button class="btn" id="clearLeaderBtn">Hapus leaderboard</button>
-        <button class="btn" id="exportBtn">Export JSON</button>
-      </div>
-    </aside>
-  </div>
-
-  <dialog id="helpDlg">
-    <div style="padding:18px;max-width:520px">
-      <h3>Petunjuk Singkat</h3>
-      <ul>
-        <li>Pilih durasi lalu klik <b>Mulai</b> atau mulai mengetik di kolom.</li>
-        <li>Huruf yang benar berwarna hijau, salah merah. WPM dihitung standar (1 kata = 5 karakter).</li>
-        <li>Simpan skor ke leaderboard lokal jika mau menyimpan hasil.</li>
-      </ul>
-      <div style="margin-top:12px;text-align:right">
-        <button id="closeHelp" class="btn primary">Tutup</button>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- Score overlay (centered modal) -->
-  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="score-modal" role="document" aria-labelledby="scoreTitle">
-      <div class="title">
-        <h2 id="scoreTitle">Hasil Mengetik</h2>
-        <div class="small">Sesi selesai — hasil dibawah</div>
-      </div>
-
-      <div class="stat-grid" style="margin-top:12px">
-        <div class="stat-item">
-          <div class="label">WPM</div>
-          <div class="value" id="scoreWPM">0</div>
-        </div>
-        <div class="stat-item">
-          <div class="label">Waktu</div>
-          <div class="value" id="scoreTime">0 s</div>
-        </div>
-        <div class="stat-item">
-          <div class="label">Typo</div>
-          <div class="value" id="scoreErrors">0</div>
-        </div>
-        <div class="stat-item">
-          <div class="label">Akurasi</div>
-          <div class="value" id="scoreAcc">100%</div>
-        </div>
-      </div>
-
-      <div class="modal-actions">
-        <button class="btn save" id="modalSaveBtn">Simpan</button>
-        <button class="btn retry" id="modalRetryBtn">Coba Lagi</button>
-        <button class="btn close" id="modalCloseBtn">Tutup</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    /* ===== Data teks latihan ===== */
-    const TEXTS = [
-      [
-        "Latihan mengetik membantu meningkatkan kecepatan dan akurasi. Lakukan rutin sedikit demi sedikit setiap hari untuk hasil maksimal.",
-        "Konsistensi adalah kunci. Jangan terburu-buru mengejar kecepatan, prioritaskan akurasi kemudian kecepatan akan mengikuti.",
-        "Fokus pada posisi jari dan gerakan halus. Hindari melihat keyboard terlalu sering."
-      ],
-      [
-        "Hari ini cuaca cerah, udara segar membuat mood belajar jadi lebih baik.",
-        "Belajar mengetik sambil mendengarkan musik instrumental bisa membantu fokus."
-      ],
-      [
-        "Perbaiki postur duduk: punggung lurus dan pergelangan tangan sedikit terangkat dari keyboard.",
-        "Latihlah mengetik menggunakan semua jari, jangan bergantung pada dua jari saja karena itu menurunkan kecepatan."
-      ],
-      [
-        "Penting untuk memahami ritme mengetik dan membiasakan diri membaca frasa bukan huruf per huruf.",
-        "Sesi interval 25 menit kerja dan 5 menit istirahat membantu mencegah kelelahan otot tangan."
-      ],
-      [
-        "Aulia Nurkamilah, adalah seorang lulusan SMKN 18 Jakarta, Jurusan Manajemen Perkantoran.",
-        "Dan ia sekarang sedang melajutkan pendidikannya, di kampus Universitas Islam Jakarta",
-        "Dengan jurusan yang ia ambil, yaitu Program Studi Fisika",
-        "Untuk kamu, semoga sukses selalu"
-      ]
-    ];
-
-    /* ===== State ===== */
-    let targetText = "";
-    let started = false;
-    let intervalId = null;
-    let timeLeft = 60;
-    let totalTime = 60;
-    let correctChars = 0;
-    let totalTyped = 0;
-    let typoCount = 0;
-    let startTimestamp = null; // epoch ms when typing started
-
-    /* ===== Elements ===== */
-    const displayEl = document.getElementById('display');
-    const inputEl = document.getElementById('input');
-    const timeLeftEl = document.getElementById('timeLeft');
-    const wpmEl = document.getElementById('wpm');
-    const accEl = document.getElementById('accuracy');
-    const progressEl = document.getElementById('progressVal');
-    const bestValEl = document.getElementById('bestVal');
-    const leaderboardEl = document.getElementById('leaderboard');
-
-    const timeSelect = document.getElementById('timeSelect');
-    const presetSelect = document.getElementById('presetSelect');
-    const startBtn = document.getElementById('startBtn');
-    const newTxtBtn = document.getElementById('newTxtBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const saveScoreBtn = document.getElementById('saveScoreBtn');
-    const clearLeaderBtn = document.getElementById('clearLeaderBtn');
-    const exportBtn = document.getElementById('exportBtn');
-    const helpBtn = document.getElementById('helpBtn');
-    const helpDlg = document.getElementById('helpDlg');
-    const closeHelp = document.getElementById('closeHelp');
-
-    const overlay = document.getElementById('overlay');
-    const scoreWPM = document.getElementById('scoreWPM');
-    const scoreTime = document.getElementById('scoreTime');
-    const scoreErrors = document.getElementById('scoreErrors');
-    const scoreAcc = document.getElementById('scoreAcc');
-    const modalSaveBtn = document.getElementById('modalSaveBtn');
-    const modalRetryBtn = document.getElementById('modalRetryBtn');
-    const modalCloseBtn = document.getElementById('modalCloseBtn');
-
-    /* ===== Utils ===== */
-    function pickText(cat = 0){
-      let pool = (cat === 0) ? TEXTS.flat() : (TEXTS[cat] || TEXTS[0]);
-      return pool[Math.floor(Math.random()*pool.length)];
+    if (!timerRunning && arrayValue.length > 0) {
+        startTime = new Date();
+        timerRunning = true;
     }
 
-    function renderText(){
-      displayEl.innerHTML = '';
-      for(let i=0;i<targetText.length;i++){
-        const sp = document.createElement('span');
-        sp.textContent = targetText[i];
-        displayEl.appendChild(sp);
-      }
-      updateProgress();
-    }
-
-    function updateProgress(){
-      const total = targetText.length || 0;
-      progressEl.textContent = `${correctChars} / ${total}`;
-    }
-
-    function resetState(){
-      clearInterval(intervalId);
-      started = false;
-      inputEl.disabled = false;
-      inputEl.value = "";
-      correctChars = 0;
-      totalTyped = 0;
-      typoCount = 0;
-      startTimestamp = null;
-      timeLeft = parseInt(timeSelect.value,10) || 60;
-      totalTime = timeLeft;
-      timeLeftEl.textContent = timeLeft;
-      wpmEl.textContent = 0;
-      accEl.textContent = 100;
-      startBtn.textContent = 'Mulai';
-      updateProgress();
-      hideOverlay();
-    }
-
-    function startTimer(){
-      if(started) return;
-      started = true;
-      startBtn.textContent = 'Sedang Main...';
-      startTimestamp = Date.now();
-      intervalId = setInterval(()=>{
-        timeLeft--;
-        timeLeftEl.textContent = timeLeft;
-        if(timeLeft <= 0){
-          clearInterval(intervalId);
-          finishSession();
-        }
-      },1000);
-    }
-
-    function finishSession(){
-      started = false;
-      inputEl.disabled = true;
-      startBtn.textContent = 'Mulai';
-      showResults();
-    }
-
-    function calcStats(){
-      const wordsTyped = correctChars / 5; // standard
-      const elapsedMs = startTimestamp ? (Date.now() - startTimestamp) : (totalTime - timeLeft)*1000;
-      const elapsedSec = Math.max(Math.round(elapsedMs/1000), 1);
-      const minutes = Math.max(elapsedSec / 60, 1/60);
-      const wpm = Math.round(wordsTyped / minutes);
-      const accuracy = totalTyped > 0 ? Math.round((correctChars / totalTyped) * 100) : 100;
-      return { wpm: isFinite(wpm) ? wpm : 0, accuracy, elapsedSec };
-    }
-
-    function showResults(){
-      const { wpm, accuracy, elapsedSec } = calcStats();
-      wpmEl.textContent = wpm;
-      accEl.textContent = accuracy;
-      scoreWPM.textContent = `${wpm} WPM`;
-      scoreTime.textContent = `${elapsedSec} s`;
-      scoreErrors.textContent = `${typoCount} kali`;
-      scoreAcc.textContent = `${accuracy}%`;
-      showOverlay();
-    }
-
-    /* Leaderboard storage */
-    function scoreKey(){ return 'typinglab_leaderboard_v1'; }
-    function loadLeaderboard(){
-      try{ const raw = localStorage.getItem(scoreKey()); const arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr : []; } catch(e){ return []; }
-    }
-    function saveLeaderboard(arr){ localStorage.setItem(scoreKey(), JSON.stringify(arr)); }
-    function renderLeaderboard(){
-      const arr = loadLeaderboard();
-      leaderboardEl.innerHTML = '';
-      if(arr.length === 0){
-        leaderboardEl.innerHTML = `<div class="small" style="color:var(--muted)">Belum ada skor tersimpan.</div>`;
-        bestValEl.textContent = '-';
-        return;
-      }
-      arr.slice(0,20).forEach((s)=>{
-        const row = document.createElement('div');
-        row.className = 'score-row';
-        row.innerHTML = `<div style="font-weight:600">${escapeHtml(s.name || 'Anon')}</div><div style="text-align:right"><div style="font-weight:700">${s.wpm} WPM</div><div class="small">${s.accuracy}% • ${s.date}</div></div>`;
-        leaderboardEl.appendChild(row);
-      });
-      bestValEl.textContent = `${arr[0].wpm} WPM`;
-    }
-    function storeScore(name, wpm, accuracy){
-      const arr = loadLeaderboard();
-      const item = { name: name || 'Anon', wpm, accuracy, date: new Date().toLocaleString() };
-      arr.push(item);
-      arr.sort((a,b)=> b.wpm - a.wpm || b.accuracy - a.accuracy);
-      saveLeaderboard(arr.slice(0,100));
-      renderLeaderboard();
-    }
-    function escapeHtml(str){ return String(str).replace(/[&<>"']/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[s]); }
-
-    /* Overlay controls */
-    function showOverlay(){ overlay.style.display = 'flex'; overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false'); modalSaveBtn.focus(); }
-    function hideOverlay(){ overlay.classList.remove('show'); setTimeout(()=> { overlay.style.display = 'none'; overlay.setAttribute('aria-hidden','true'); }, 240); }
-
-    /* ===== Events & Init ===== */
-    function init(){
-      targetText = pickText(0);
-      renderText();
-      resetState();
-      renderLeaderboard();
-      timeLeftEl.textContent = timeLeft;
-    }
-
-    // typing input
-    inputEl.addEventListener('input', ()=>{
-      if(!started){
-        startTimer();
-      }
-      const val = inputEl.value;
-      totalTyped = val.length;
-      correctChars = 0;
-      typoCount = 0;
-
-      const spans = displayEl.querySelectorAll('span');
-      for(let i=0;i<spans.length;i++){
-        const ch = val[i];
-        spans[i].classList.remove('correct','incorrect','current');
-        if(ch == null || ch === undefined){
-          // not typed yet
-        } else if(ch === spans[i].textContent){
-          spans[i].classList.add('correct');
-          correctChars++;
+    let correctAll = true;
+    arrayText.forEach((charSpan, index) => {
+        const char = arrayValue[index];
+        if (char == null) {
+            charSpan.classList.remove("correct", "incorrect");
+            correctAll = false;
+        } else if (char === charSpan.textContent) {
+            charSpan.classList.add("correct");
+            charSpan.classList.remove("incorrect");
         } else {
-          spans[i].classList.add('incorrect');
-          typoCount++;
+            charSpan.classList.add("incorrect");
+            charSpan.classList.remove("correct");
+            correctAll = false;
+            typos++;
         }
-      }
-
-      // mark cursor
-      if(val.length < spans.length){
-        spans[val.length]?.classList.add('current');
-      }
-
-      const stats = calcStats();
-      wpmEl.textContent = stats.wpm;
-      accEl.textContent = stats.accuracy;
-      updateProgress();
-
-      // check complete: all chars typed and all correct
-      if(totalTyped >= targetText.length && correctChars === targetText.length){
-        clearInterval(intervalId);
-        finishSession();
-      }
     });
 
-    // Start button (reset + start)
-    startBtn.addEventListener('click', ()=>{
-      resetState();
-      startTimer();
-      inputEl.focus();
-    });
+    if (correctAll && arrayValue.length === arrayText.length) {
+        endGame();
+    }
+});
 
-    // New text
-    newTxtBtn.addEventListener('click', ()=>{
-      const cat = parseInt(presetSelect.value,10) || 0;
-      targetText = pickText(cat);
-      renderText();
-      resetState();
-      inputEl.focus();
-    });
+function endGame() {
+    const endTime = new Date();
+    const timeTaken = (endTime - startTime) / 1000;
+    const words = textInput.value.trim().split(/\s+/).length;
+    const wpm = Math.round((words / timeTaken) * 60);
 
-    // Reset
-    resetBtn.addEventListener('click', ()=>{ resetState(); inputEl.focus(); });
+    wpmScore.textContent = `WPM: ${wpm}`;
+    timeScore.textContent = `Waktu: ${timeTaken.toFixed(2)} detik`;
+    typoScore.textContent = `Typo: ${typos}`;
 
-    // Save right-panel
-    saveScoreBtn.addEventListener('click', ()=>{
-      const { wpm, accuracy } = calcStats();
-      const nm = prompt('Nama untuk leaderboard (maks 20 char):','Anon');
-      if(nm === null) return;
-      storeScore(nm.substring(0,20), wpm, accuracy);
-      alert('Skor tersimpan di leaderboard lokal.');
-    });
+    scoreBoard.classList.add("show");
+}
 
-    // Modal save
-    modalSaveBtn.addEventListener('click', ()=>{
-      const { wpm, accuracy } = calcStats();
-      const nm = prompt('Nama untuk leaderboard (maks 20 char):','Anon');
-      if(nm === null) return;
-      storeScore(nm.substring(0,20), wpm, accuracy);
-      hideOverlay();
-      alert('Skor tersimpan di leaderboard lokal.');
-    });
+document.getElementById("saveScore").addEventListener("click", () => {
+    alert("Skor disimpan!");
+    scoreBoard.classList.remove("show");
+    loadText();
+});
+</script>
 
-    // Modal retry
-    modalRetryBtn.addEventListener('click', ()=>{
-      const cat = parseInt(presetSelect.value,10) || 0;
-      targetText = pickText(cat);
-      renderText();
-      resetState();
-      inputEl.focus();
-    });
-
-    // Modal close
-    modalCloseBtn.addEventListener('click', hideOverlay);
-
-    // Clear leaderboard
-    clearLeaderBtn.addEventListener('click', ()=>{
-      if(confirm('Hapus semua skor di leaderboard lokal?')) {
-        localStorage.removeItem(scoreKey());
-        renderLeaderboard();
-      }
-    });
-
-    // Export leaderboard
-    exportBtn.addEventListener('click', ()=>{
-      const arr = loadLeaderboard();
-      const blob = new Blob([JSON.stringify(arr, null, 2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'typinglab-leaderboard.json';
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-
-    // Shortcut focus
-    document.addEventListener('keydown', (e)=>{
-      if(e.ctrlKey && e.key.toLowerCase() === 'l'){
-        e.preventDefault(); inputEl.focus();
-      }
-    });
-
-    // Help dialog
-    helpBtn.addEventListener('click', ()=> helpDlg.showModal());
-    closeHelp.addEventListener('click', ()=> helpDlg.close());
-
-    // Time select change resets
-    timeSelect.addEventListener('change', ()=> resetState());
-
-    // Init on load
-    window.addEventListener('load', init);
-  </script>
 </body>
 </html>
