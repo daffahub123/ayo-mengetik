@@ -1,6 +1,111 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Lab</title>
+<style>
+    body { background: #0f172a; color: white; font-family: sans-serif; text-align: center; }
+    .container { max-width: 800px; margin: auto; padding: 20px; }
+    .text { font-size: 20px; text-align: left; background: #1e293b; padding: 20px; border-radius: 8px; }
+    .typed { color: #4ade80; }
+    .wrong { background: #f87171; color: white; }
+    .scoreboard { margin-top: 20px; background: #1e293b; padding: 20px; border-radius: 8px; display: none; }
+    button { background: #2563eb; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Typing Lab</h1>
+    <div class="text" id="text"></div>
+    <textarea id="input" rows="4" style="width:100%;margin-top:10px;"></textarea>
+    
+    <div class="scoreboard" id="scoreboard">
+        <h2>Hasil</h2>
+        <p id="timeResult"></p>
+        <p id="wpmResult"></p>
+        <p id="errorResult"></p>
+        <button id="saveScore">Simpan Skor</button>
+    </div>
+</div>
+
+<script>
+const textEl = document.getElementById('text');
+const inputEl = document.getElementById('input');
+const scoreboard = document.getElementById('scoreboard');
+const saveBtn = document.getElementById('saveScore');
+
+let text = "Belajar mengetik sambil mendengarkan musik instrumental bisa membantu fokus.";
+let startTime, timerStarted = false, errorCount = 0;
+
+textEl.innerHTML = text.split('').map(c => `<span>${c}</span>`).join('');
+
+inputEl.addEventListener('input', () => {
+    const input = inputEl.value.split('');
+    const spans = textEl.querySelectorAll('span');
+    
+    if (!timerStarted) {
+        startTime = Date.now();
+        timerStarted = true;
+    }
+
+    let correctCount = 0;
+    errorCount = 0;
+    
+    spans.forEach((charSpan, index) => {
+        const char = input[index];
+        if (char == null) {
+            charSpan.classList.remove('typed', 'wrong');
+        } else if (char === charSpan.textContent) {
+            charSpan.classList.add('typed');
+            charSpan.classList.remove('wrong');
+            correctCount++;
+        } else {
+            charSpan.classList.add('wrong');
+            charSpan.classList.remove('typed');
+            errorCount++;
+        }
+    });
+
+    // Jika semua benar dan panjang input sama
+    if (correctCount === text.length && input.length === text.length) {
+        stopTest();
+    }
+});
+
+function stopTest() {
+    let timeTaken = (Date.now() - startTime) / 1000; // detik
+    let wpm = Math.round((text.split(' ').length / timeTaken) * 60);
+    
+    document.getElementById('timeResult').textContent = `Waktu: ${timeTaken.toFixed(2)} detik`;
+    document.getElementById('wpmResult').textContent = `Kecepatan: ${wpm} WPM`;
+    document.getElementById('errorResult').textContent = `Kesalahan: ${errorCount}`;
+    
+    scoreboard.style.display = 'block';
+    inputEl.disabled = true;
+}
+
+saveBtn.addEventListener('click', () => {
+    const score = {
+        time: document.getElementById('timeResult').textContent,
+        wpm: document.getElementById('wpmResult').textContent,
+        errors: document.getElementById('errorResult').textContent,
+        date: new Date().toLocaleString()
+    };
+    
+    let scores = JSON.parse(localStorage.getItem('typingScores')) || [];
+    scores.push(score);
+    localStorage.setItem('typingScores', JSON.stringify(scores));
+    alert('Skor tersimpan!');
+});
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="id">
+<head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Typing Lab — Latihan Mengetik</title>
