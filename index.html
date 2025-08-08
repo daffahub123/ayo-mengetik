@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Typing Lab — Latihan Mengetik</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --accent:#7c3aed;
+      --muted:#9aa4b2;
+      --glass: rgba(255,255,255,0.03);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, "Segoe UI", Roboto, Arial;
+      background: linear-gradient(180deg,#071021 0%, #071629 60%);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+    }
+
+    .wrap{
+      width:100%;
+      max-width:1100px;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:24px;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;
+      padding:18px;
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      border:1px solid rgba(255,255,255,0.03);
+    }
+
+    header.app{
+      grid-column: 1 / -1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 18px;
+      margin-bottom:6px;
+      background: linear-gradient(90deg, rgba(124,58,237,0.12), rgba(20,184,166,0.06));
+      border-radius:12px;
+    }
+    header.app h1{margin:0;font-size:18px;letter-spacing:0.2px}
+    header.app p{margin:0;color:var(--muted);font-size:13px}
+
+    /* Left main area */
+    .main{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .display{
+      min-height:160px;
+      padding:16px;
+      background:var(--glass);
+      border-radius:10px;
+      font-size:18px;
+      line-height:1.8;
+      color:#cfe8ff;
+      overflow-wrap:break-word;
+      user-select:none;
+    }
+
+    .display span{
+      padding:1px 2px;
+      border-radius:3px;
+    }
+    .display .correct{ background: rgba(34,197,94,0.15); color:#a7f3d0; }
+    .display .incorrect{ background: rgba(239,68,68,0.12); color:#fecaca; text-decoration: underline; }
+    .display .current{ border-bottom:2px solid rgba(124,58,237,0.6); }
+
+    textarea#input{
+      width:100%;
+      min-height:110px;
+      resize:vertical;
+      border-radius:8px;
+      padding:12px;
+      font-size:16px;
+      color:var(--bg);
+      border: none;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+
+    .controls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .left-controls, .right-controls{display:flex;gap:8px;align-items:center}
+
+    .btn{
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.06);
+      padding:8px 12px;
+      border-radius:8px;
+      color:inherit;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .btn.primary{
+      background:linear-gradient(90deg,var(--accent), #06b6d4);
+      color:white;
+      border:none;
+      box-shadow: 0 6px 18px rgba(33,11,79,0.25);
+    }
+
+    .select{
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.04);
+      padding:8px;
+      border-radius:8px;
+      color:var(--muted);
+    }
+
+    /* Right side */
+    .panel{ display:flex; flex-direction:column; gap:12px; }
+    .stat{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:12px;
+      border-radius:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.02);
+    }
+    .stat .label{ color:var(--muted); font-size:13px }
+    .stat .value{ font-size:20px; font-weight:700; color:#e6f6ff }
+
+    .small{
+      font-size:13px;color:var(--muted);
+    }
+
+    .leaderboard{
+      max-height:260px; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px;
+    }
+    .score-row{
+      display:flex; justify-content:space-between; align-items:center;
+      padding:8px;border-radius:8px;background: rgba(255,255,255,0.02);
+      font-size:14px;
+    }
+
+    .footer-note{ color:var(--muted); font-size:13px; text-align:center; margin-top:8px }
+
+    /* Responsive */
+    @media (max-width:980px){
+      .wrap{ grid-template-columns: 1fr; }
+      .card{ padding:14px }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="app card">
+      <div>
+        <h1>Typing Lab</h1>
+        <p>Latihan mengetik — WPM, akurasi, timer, leaderboard lokal</p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="small">Mode: <strong id="modeLabel">Time</strong></div>
+        <button class="btn" id="helpBtn">Petunjuk</button>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <div class="card main">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="presetSelect" class="select" title="Pilih paragraf latihan">
+            <option value="0">Paragraf acak</option>
+            <option value="1">Paragraf sederhana</option>
+            <option value="2">Paragraf menengah</option>
+            <option value="3">Paragraf sulit</option>
+          </select>
+          <select id="timeSelect" class="select" title="Pilih durasi">
+            <option value="60">60 detik</option>
+            <option value="30">30 detik</option>
+            <option value="15">15 detik</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" id="newTxtBtn">Tampilkan teks baru</button>
+          <button class="btn primary" id="startBtn">Mulai</button>
+        </div>
+      </div>
+
+      <div id="display" class="display" aria-live="polite"></div>
+
+      <textarea id="input" placeholder="Ketik di sini untuk memulai..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+
+      <div class="controls">
+        <div class="left-controls small">
+          <div>Waktu sisa: <strong id="timeLeft">60</strong>s</div>
+          <div style="margin-left:8px">WPM: <strong id="wpm">0</strong></div>
+          <div style="margin-left:8px">Akurasi: <strong id="accuracy">100</strong>%</div>
+        </div>
+        <div class="right-controls">
+          <button class="btn" id="resetBtn">Reset</button>
+          <button class="btn" id="saveScoreBtn">Simpan skor</button>
+        </div>
+      </div>
+
+      <div class="footer-note">Tip: Tekan <kbd>Ctrl</kbd> + <kbd>L</kbd> untuk fokus area mengetik.</div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <aside class="card panel">
+      <div class="stat">
+        <div class="label">Progress</div>
+        <div class="value" id="progressVal">0 / 0</div>
+      </div>
+
+      <div class="stat">
+        <div class="label">Terbaik (Local)</div>
+        <div class="value" id="bestVal">-</div>
+      </div>
+
+      <div style="padding:6px;background:transparent;border-radius:8px">
+        <div class="small" style="margin-bottom:8px">Leaderboard (LocalStorage)</div>
+        <div class="leaderboard" id="leaderboard"></div>
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="clearLeaderBtn">Hapus leaderboard</button>
+        <button class="btn" id="exportBtn">Export JSON</button>
+      </div>
+    </aside>
+  </div>
+
+  <dialog id="helpDlg">
+    <div style="padding:18px;max-width:520px">
+      <h3>Petunjuk Singkat</h3>
+      <ul>
+        <li>Pilih durasi lalu klik <b>Mulai</b> atau mulai mengetik di kolom.</li>
+        <li>Huruf yang benar berwarna hijau, salah merah. WPM dihitung standar (1 kata = 5 karakter).</li>
+        <li>Simpan skor ke leaderboard lokal jika mau menyimpan hasil.</li>
+      </ul>
+      <div style="margin-top:12px;text-align:right">
+        <button id="closeHelp" class="btn primary">Tutup</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    /* ====== Data teks latihan (bisa ditambah) ====== */
+    const TEXTS = [
+      // value 0: acak
+      [
+        "Latihan mengetik membantu meningkatkan kecepatan dan akurasi. Lakukan rutin sedikit demi sedikit setiap hari untuk hasil maksimal.",
+        "Konsistensi adalah kunci. Jangan terburu-buru mengejar kecepatan, prioritaskan akurasi kemudian kecepatan akan mengikuti.",
+        "Fokus pada posisi jari dan gerakan halus. Hindari melihat keyboard terlalu sering."
+      ],
+      // kategori 1 simple
+      [
+        "Hari ini cuaca cerah, udara segar membuat mood belajar jadi lebih baik.",
+        "Belajar mengetik sambil mendengarkan musik instrumental bisa membantu fokus.",
+      ],
+      // kategori 2 medium
+      [
+        "Perbaiki postur duduk: punggung lurus dan pergelangan tangan sedikit terangkat dari keyboard.",
+        "Latihlah mengetik menggunakan semua jari, jangan bergantung pada dua jari saja karena itu menurunkan kecepatan."
+      ],
+      // kategori 3 hard
+      [
+        "Penting untuk memahami ritme mengetik dan membiasakan diri membaca frasa bukan huruf per huruf.",
+        "Sesi interval 25 menit kerja dan 5 menit istirahat membantu mencegah kelelahan otot tangan."
+      ]
+    ];
+
+    /* ====== State ====== */
+    let targetText = "";
+    let started = false;
+    let intervalId = null;
+    let timeLeft = 60;
+    let totalTime = 60;
+    let correctChars = 0;
+    let totalTyped = 0;
+
+    /* ====== Elements ====== */
+    const displayEl = document.getElementById('display');
+    const inputEl = document.getElementById('input');
+    const timeLeftEl = document.getElementById('timeLeft');
+    const wpmEl = document.getElementById('wpm');
+    const accEl = document.getElementById('accuracy');
+    const progressEl = document.getElementById('progressVal');
+    const bestValEl = document.getElementById('bestVal');
+    const leaderboardEl = document.getElementById('leaderboard');
+
+    const timeSelect = document.getElementById('timeSelect');
+    const presetSelect = document.getElementById('presetSelect');
+    const startBtn = document.getElementById('startBtn');
+    const newTxtBtn = document.getElementById('newTxtBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const saveScoreBtn = document.getElementById('saveScoreBtn');
+    const clearLeaderBtn = document.getElementById('clearLeaderBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const helpBtn = document.getElementById('helpBtn');
+    const helpDlg = document.getElementById('helpDlg');
+    const closeHelp = document.getElementById('closeHelp');
+
+    /* ====== Utility ====== */
+    function pickText(cat = 0){
+      let pool;
+      if(cat === 0){
+        // flatten all
+        pool = TEXTS.flat();
+      } else {
+        pool = TEXTS[cat] || TEXTS[0];
+      }
+      const t = pool[Math.floor(Math.random()*pool.length)];
+      return t;
+    }
+
+    function renderText(){
+      displayEl.innerHTML = '';
+      for(let i=0;i<targetText.length;i++){
+        const sp = document.createElement('span');
+        sp.textContent = targetText[i];
+        displayEl.appendChild(sp);
+      }
+      updateProgress();
+    }
+
+    function updateProgress(){
+      const total = targetText.length;
+      const correct = correctChars;
+      progressEl.textContent = `${correct} / ${total}`;
+    }
+
+    function resetState(){
+      clearInterval(intervalId);
+      started = false;
+      inputEl.disabled = false;
+      inputEl.value = "";
+      correctChars = 0;
+      totalTyped = 0;
+      timeLeft = parseInt(timeSelect.value,10) || 60;
+      totalTime = timeLeft;
+      timeLeftEl.textContent = timeLeft;
+      wpmEl.textContent = 0;
+      accEl.textContent = 100;
+      startBtn.textContent = 'Mulai';
+      updateProgress();
+    }
+
+    function startTimer(){
+      if(started) return;
+      started = true;
+      startBtn.textContent = 'Sedang Main...';
+      intervalId = setInterval(()=>{
+        timeLeft--;
+        timeLeftEl.textContent = timeLeft;
+        if(timeLeft <= 0){
+          clearInterval(intervalId);
+          finishSession();
+        }
+      },1000);
+    }
+
+    function finishSession(){
+      started = false;
+      inputEl.disabled = true;
+      startBtn.textContent = 'Mulai';
+      showResults();
+    }
+
+    function calcStats(){
+      const wordsTyped = correctChars / 5; // standard
+      const elapsedSec = totalTime - timeLeft;
+      const minutes = Math.max(elapsedSec / 60, 1/60); // avoid div0
+      const wpm = Math.round(wordsTyped / minutes);
+      const accuracy = totalTyped > 0 ? Math.round((correctChars / totalTyped) * 100) : 100;
+      return { wpm: isFinite(wpm) ? wpm : 0, accuracy };
+    }
+
+    function showResults(){
+      const { wpm, accuracy } = calcStats();
+      wpmEl.textContent = wpm;
+      accEl.textContent = accuracy;
+      // small modal or alert
+      setTimeout(()=> {
+        alert(`Selesai!\nWPM: ${wpm}\nAkurasi: ${accuracy}%`);
+      },200);
+    }
+
+    function scoreKey(){
+      return 'typinglab_leaderboard_v1';
+    }
+
+    function loadLeaderboard(){
+      try{
+        const raw = localStorage.getItem(scoreKey());
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      }catch(e){
+        return [];
+      }
+    }
+
+    function saveLeaderboard(arr){
+      localStorage.setItem(scoreKey(), JSON.stringify(arr));
+    }
+
+    function renderLeaderboard(){
+      const arr = loadLeaderboard();
+      leaderboardEl.innerHTML = '';
+      if(arr.length === 0){
+        leaderboardEl.innerHTML = `<div class="small" style="color:var(--muted)">Belum ada skor tersimpan.</div>`;
+        bestValEl.textContent = '-';
+        return;
+      }
+      arr.slice(0,20).forEach((s, idx)=>{
+        const row = document.createElement('div');
+        row.className = 'score-row';
+        row.innerHTML = `<div style="font-weight:600">${s.name || 'Anon'}</div><div style="text-align:right"><div style="font-weight:700">${s.wpm} WPM</div><div class="small">${s.accuracy}% • ${s.date}</div></div>`;
+        leaderboardEl.appendChild(row);
+      });
+      bestValEl.textContent = `${arr[0].wpm} WPM`;
+    }
+
+    function storeScore(name, wpm, accuracy){
+      const arr = loadLeaderboard();
+      const item = { name: name || 'Anon', wpm, accuracy, date: new Date().toLocaleString() };
+      arr.push(item);
+      // sort desc by wpm then accuracy
+      arr.sort((a,b)=> b.wpm - a.wpm || b.accuracy - a.accuracy);
+      saveLeaderboard(arr.slice(0,100)); // keep top100
+      renderLeaderboard();
+    }
+
+    /* ====== Event handlers ====== */
+    // Initialize
+    function init(){
+      // default text
+      targetText = pickText(0);
+      renderText();
+      resetState();
+      renderLeaderboard();
+      // set timeout value display
+      timeLeftEl.textContent = timeLeft;
+    }
+
+    // Input typing
+    inputEl.addEventListener('input', (e)=>{
+      if(!started){
+        startTimer();
+        started = true;
+      }
+      const val = inputEl.value;
+      totalTyped = val.length;
+      correctChars = 0;
+
+      const spans = displayEl.querySelectorAll('span');
+      for(let i=0;i<spans.length;i++){
+        const ch = val[i];
+        spans[i].classList.remove('correct','incorrect','current');
+        if(ch == null){
+          // not typed yet
+        } else if(ch === spans[i].textContent){
+          spans[i].classList.add('correct');
+          correctChars++;
+        } else {
+          spans[i].classList.add('incorrect');
+        }
+      }
+      // mark current position
+      if(val.length < spans.length){
+        spans[val.length]?.classList.add('current');
+      }
+
+      const stats = calcStats();
+      wpmEl.textContent = stats.wpm;
+      accEl.textContent = stats.accuracy;
+      updateProgress();
+    });
+
+    // Start button
+    startBtn.addEventListener('click', ()=>{
+      if(!started){
+        // reset first
+        resetState();
+        startTimer();
+        inputEl.focus();
+      } else {
+        // if running, finish early
+        clearInterval(intervalId);
+        finishSession();
+      }
+    });
+
+    // new text
+    newTxtBtn.addEventListener('click', ()=>{
+      const cat = parseInt(presetSelect.value,10) || 0;
+      targetText = pickText(cat);
+      renderText();
+      resetState();
+      inputEl.focus();
+    });
+
+    // reset
+    resetBtn.addEventListener('click', ()=>{
+      resetState();
+      inputEl.focus();
+    });
+
+    // save score
+    saveScoreBtn.addEventListener('click', ()=>{
+      const stats = calcStats();
+      const nm = prompt('Nama untuk leaderboard (maks 20 char):','Anon');
+      if(nm === null) return;
+      storeScore(nm.substring(0,20), stats.wpm, stats.accuracy);
+      alert('Skor tersimpan di leaderboard lokal.');
+    });
+
+    // clear leaderboard
+    clearLeaderBtn.addEventListener('click', ()=>{
+      if(confirm('Hapus semua skor di leaderboard lokal?')) {
+        localStorage.removeItem(scoreKey());
+        renderLeaderboard();
+      }
+    });
+
+    // export
+    exportBtn.addEventListener('click', ()=>{
+      const arr = loadLeaderboard();
+      const blob = new Blob([JSON.stringify(arr, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'typinglab-leaderboard.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // shortcuts
+    document.addEventListener('keydown', (e)=>{
+      if(e.ctrlKey && e.key.toLowerCase() === 'l'){
+        e.preventDefault(); inputEl.focus();
+      }
+    });
+
+    // help dialog
+    helpBtn.addEventListener('click', ()=> helpDlg.showModal());
+    closeHelp.addEventListener('click', ()=> helpDlg.close());
+
+    // time selection change -> reset timer accordingly
+    timeSelect.addEventListener('change', ()=>{
+      resetState();
+    });
+
+    // initial setup
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>
