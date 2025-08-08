@@ -9,13 +9,15 @@
       --bg:#0f1724;
       --card:#0b1220;
       --accent:#7c3aed;
+      --accent-2:#06b6d4;
       --muted:#9aa4b2;
       --glass: rgba(255,255,255,0.03);
+      --blue-score: linear-gradient(180deg,#1e90ff,#1273d6);
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family:Inter, "Segoe UI", Roboto, Arial;
+      font-family:Inter, "Segoe UI", Roboto, Arial, sans-serif;
       background: linear-gradient(180deg,#071021 0%, #071629 60%);
       color:#e6eef8;
       -webkit-font-smoothing:antialiased;
@@ -79,6 +81,7 @@
     .display span{
       padding:1px 2px;
       border-radius:3px;
+      white-space:pre-wrap;
     }
     .display .correct{ background: rgba(34,197,94,0.15); color:#a7f3d0; }
     .display .incorrect{ background: rgba(239,68,68,0.12); color:#fecaca; text-decoration: underline; }
@@ -116,7 +119,7 @@
       font-size:14px;
     }
     .btn.primary{
-      background:linear-gradient(90deg,var(--accent), #06b6d4);
+      background:linear-gradient(90deg,var(--accent), var(--accent-2));
       color:white;
       border:none;
       box-shadow: 0 6px 18px rgba(33,11,79,0.25);
@@ -158,6 +161,69 @@
     }
 
     .footer-note{ color:var(--muted); font-size:13px; text-align:center; margin-top:8px }
+
+    /* Score modal (centered, blue, minimal) */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2,6,23,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .score-modal {
+      width: 360px;
+      max-width: 92%;
+      border-radius: 12px;
+      padding: 22px;
+      background: var(--blue-score);
+      color: white;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.08);
+      text-align: center;
+    }
+    .score-modal h2 {
+      margin: 0 0 10px 0;
+      font-size: 22px;
+      letter-spacing: 0.2px;
+    }
+    .score-row-stat {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background: rgba(255,255,255,0.08);
+      padding:10px 12px;
+      border-radius:8px;
+      margin:10px 0;
+      font-weight:600;
+      font-size:16px;
+    }
+    .score-actions{
+      display:flex;
+      gap:10px;
+      margin-top:12px;
+      justify-content:center;
+    }
+    .score-actions .btn{
+      border: none;
+      padding: 8px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:700;
+    }
+    .btn.save {
+      background: rgba(255,255,255,0.12);
+      color: white;
+    }
+    .btn.retry {
+      background: rgba(255,255,255,0.18);
+      color: white;
+    }
+    .btn.close {
+      background: rgba(0,0,0,0.2);
+      color: white;
+    }
 
     /* Responsive */
     @media (max-width:980px){
@@ -258,6 +324,36 @@
     </div>
   </dialog>
 
+  <!-- Score overlay (centered modal) -->
+  <div class="overlay" id="overlay">
+    <div class="score-modal" role="dialog" aria-modal="true" aria-labelledby="scoreTitle">
+      <h2 id="scoreTitle">Hasil Mengetik</h2>
+
+      <div class="score-row-stat">
+        <div>WPM</div>
+        <div id="scoreWPM">0</div>
+      </div>
+      <div class="score-row-stat">
+        <div>Waktu</div>
+        <div id="scoreTime">0 s</div>
+      </div>
+      <div class="score-row-stat">
+        <div>Typo</div>
+        <div id="scoreErrors">0</div>
+      </div>
+      <div class="score-row-stat" style="background:transparent;margin-top:6px;font-size:14px;font-weight:500">
+        <div>Akurasi</div>
+        <div id="scoreAcc">100%</div>
+      </div>
+
+      <div class="score-actions">
+        <button class="btn save" id="modalSaveBtn">Simpan</button>
+        <button class="btn retry" id="modalRetryBtn">Coba Lagi</button>
+        <button class="btn close" id="modalCloseBtn">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ====== Data teks latihan (bisa ditambah) ====== */
     const TEXTS = [
@@ -270,7 +366,7 @@
       // kategori 1 simple
       [
         "Hari ini cuaca cerah, udara segar membuat mood belajar jadi lebih baik.",
-        "Belajar mengetik sambil mendengarkan musik instrumental bisa membantu fokus.",
+        "Belajar mengetik sambil mendengarkan musik instrumental bisa membantu fokus."
       ],
       // kategori 2 medium
       [
@@ -292,6 +388,7 @@
     let totalTime = 60;
     let correctChars = 0;
     let totalTyped = 0;
+    let typoCount = 0;
 
     /* ====== Elements ====== */
     const displayEl = document.getElementById('display');
@@ -315,11 +412,19 @@
     const helpDlg = document.getElementById('helpDlg');
     const closeHelp = document.getElementById('closeHelp');
 
+    const overlay = document.getElementById('overlay');
+    const scoreWPM = document.getElementById('scoreWPM');
+    const scoreTime = document.getElementById('scoreTime');
+    const scoreErrors = document.getElementById('scoreErrors');
+    const scoreAcc = document.getElementById('scoreAcc');
+    const modalSaveBtn = document.getElementById('modalSaveBtn');
+    const modalRetryBtn = document.getElementById('modalRetryBtn');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+
     /* ====== Utility ====== */
     function pickText(cat = 0){
       let pool;
       if(cat === 0){
-        // flatten all
         pool = TEXTS.flat();
       } else {
         pool = TEXTS[cat] || TEXTS[0];
@@ -332,6 +437,7 @@
       displayEl.innerHTML = '';
       for(let i=0;i<targetText.length;i++){
         const sp = document.createElement('span');
+        // preserve spaces when rendering
         sp.textContent = targetText[i];
         displayEl.appendChild(sp);
       }
@@ -351,6 +457,7 @@
       inputEl.value = "";
       correctChars = 0;
       totalTyped = 0;
+      typoCount = 0;
       timeLeft = parseInt(timeSelect.value,10) || 60;
       totalTime = timeLeft;
       timeLeftEl.textContent = timeLeft;
@@ -358,6 +465,7 @@
       accEl.textContent = 100;
       startBtn.textContent = 'Mulai';
       updateProgress();
+      hideOverlay();
     }
 
     function startTimer(){
@@ -378,7 +486,7 @@
       started = false;
       inputEl.disabled = true;
       startBtn.textContent = 'Mulai';
-      showResults();
+      showResults(); // will show modal
     }
 
     function calcStats(){
@@ -387,17 +495,20 @@
       const minutes = Math.max(elapsedSec / 60, 1/60); // avoid div0
       const wpm = Math.round(wordsTyped / minutes);
       const accuracy = totalTyped > 0 ? Math.round((correctChars / totalTyped) * 100) : 100;
-      return { wpm: isFinite(wpm) ? wpm : 0, accuracy };
+      return { wpm: isFinite(wpm) ? wpm : 0, accuracy, elapsedSec };
     }
 
     function showResults(){
-      const { wpm, accuracy } = calcStats();
+      const { wpm, accuracy, elapsedSec } = calcStats();
+      // update right-panel values
       wpmEl.textContent = wpm;
       accEl.textContent = accuracy;
-      // small modal or alert
-      setTimeout(()=> {
-        alert(`Selesai!\nWPM: ${wpm}\nAkurasi: ${accuracy}%`);
-      },200);
+      // prepare overlay modal values
+      scoreWPM.textContent = `${wpm} WPM`;
+      scoreTime.textContent = `${elapsedSec} s`;
+      scoreErrors.textContent = `${typoCount} kali`;
+      scoreAcc.textContent = `${accuracy}%`;
+      showOverlay();
     }
 
     function scoreKey(){
@@ -445,15 +556,23 @@
       renderLeaderboard();
     }
 
+    function showOverlay(){
+      overlay.style.display = 'flex';
+      // trap focus on modal
+      modalSaveBtn.focus();
+    }
+
+    function hideOverlay(){
+      overlay.style.display = 'none';
+    }
+
     /* ====== Event handlers ====== */
     // Initialize
     function init(){
-      // default text
       targetText = pickText(0);
       renderText();
       resetState();
       renderLeaderboard();
-      // set timeout value display
       timeLeftEl.textContent = timeLeft;
     }
 
@@ -466,6 +585,7 @@
       const val = inputEl.value;
       totalTyped = val.length;
       correctChars = 0;
+      typoCount = 0;
 
       const spans = displayEl.querySelectorAll('span');
       for(let i=0;i<spans.length;i++){
@@ -478,6 +598,7 @@
           correctChars++;
         } else {
           spans[i].classList.add('incorrect');
+          typoCount++;
         }
       }
       // mark current position
@@ -489,6 +610,19 @@
       wpmEl.textContent = stats.wpm;
       accEl.textContent = stats.accuracy;
       updateProgress();
+
+      // If user completed typing the whole text exactly -> finish early
+      if(val.length >= targetText.length){
+        // check if all correct (match targetText exactly lengthwise)
+        if(val.substring(0, targetText.length) === targetText){
+          // stop timer and finish
+          clearInterval(intervalId);
+          finishSession();
+        } else {
+          // if typed longer than text, ignore extra chars (but count typos already)
+          // Optionally, we could prevent further typing; keep behavior as-is.
+        }
+      }
     });
 
     // Start button
@@ -520,13 +654,37 @@
       inputEl.focus();
     });
 
-    // save score
+    // save score (right panel button) - saves current stats
     saveScoreBtn.addEventListener('click', ()=>{
-      const stats = calcStats();
+      const { wpm, accuracy } = calcStats();
       const nm = prompt('Nama untuk leaderboard (maks 20 char):','Anon');
       if(nm === null) return;
-      storeScore(nm.substring(0,20), stats.wpm, stats.accuracy);
+      storeScore(nm.substring(0,20), wpm, accuracy);
       alert('Skor tersimpan di leaderboard lokal.');
+    });
+
+    // modal save (from overlay)
+    modalSaveBtn.addEventListener('click', ()=>{
+      const { wpm, accuracy } = calcStats();
+      const nm = prompt('Nama untuk leaderboard (maks 20 char):','Anon');
+      if(nm === null) return;
+      storeScore(nm.substring(0,20), wpm, accuracy);
+      hideOverlay();
+      alert('Skor tersimpan di leaderboard lokal.');
+    });
+
+    // modal retry
+    modalRetryBtn.addEventListener('click', ()=>{
+      // new random text and reset
+      const cat = parseInt(presetSelect.value,10) || 0;
+      targetText = pickText(cat);
+      renderText();
+      resetState();
+      inputEl.focus();
+    });
+
+    modalCloseBtn.addEventListener('click', ()=>{
+      hideOverlay();
     });
 
     // clear leaderboard
